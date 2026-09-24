@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>104: Not supposed to be here</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f7f7f7;
+            color: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .error-container {
+            text-align: left;
+            max-width: 600px;
+            padding: 20px;
+        }
+        h1 { font-size: 2em; margin-bottom: 10px; }
+        p { color: #666; font-size: 0.9em; line-height: 1.4; }
+        canvas {
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: block;
+            margin-top: 20px;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1>You're not supposed to be here.</h1>
+        <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable. Press <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
+        <canvas id="gameCanvas" width="600" height="150"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let dino = { x: 50, y: 100, width: 20, height: 30, vy: 0, gravity: 0.6, jump: -10, grounded: true };
+        let obstacles = [];
+        let score = 0;
+        let gameSpeed = 4;
+        let highScore = 0;
+        let gameOver = false;
+
+        document.addEventListener("keydown", e => {
+            if ((e.code === "Space" || e.code === "ArrowUp") && dino.grounded) {
+                dino.vy = dino.jump;
+                dino.grounded = false;
+            }
+            if (gameOver && e.code === "Space") {
+                resetGame();
+            }
+        });
+
+        function resetGame() {
+            dino.y = 100;
+            dino.vy = 0;
+            dino.grounded = true;
+            obstacles = [];
+            score = 0;
+            gameSpeed = 4;
+            gameOver = false;
+            loop();
+        }
+
+        function spawnObstacle() {
+            if (Math.random() < 0.02) {
+                obstacles.push({ x: canvas.width, y: 110, width: 15, height: 40 });
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            dino.vy += dino.gravity;
+            dino.y += dino.vy;
+
+            if (dino.y > 100) {
+                dino.y = 100;
+                dino.vy = 0;
+                dino.grounded = true;
+            }
+
+            spawnObstacle();
+
+            obstacles.forEach(obs => {
+                obs.x -= gameSpeed;
+                if (
+                    dino.x < obs.x + obs.width &&
+                    dino.x + dino.width > obs.x &&
+                    dino.y < obs.y + obs.height &&
+                    dino.y + dino.height > obs.y
+                ) {
+                    gameOver = true;
+                    if (score > highScore) highScore = score;
+                }
+            });
+
+            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+            score++;
+            gameSpeed += 0.001;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Ground
+            ctx.fillStyle = "#535353";
+            ctx.fillRect(0, 130, canvas.width, 2);
+
+            // Draw Dino
+            ctx.fillStyle = "#535353";
+            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
+
+            // Draw Obstacles
+            obstacles.forEach(obs => {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            });
+
+            // Draw Score
+            ctx.fillStyle = "#535353";
+            ctx.font = "12px sans-serif";
+            ctx.fillText(`HI: ${Math.floor(highScore)}  SC: ${Math.floor(score)}`, canvas.width - 150, 20);
+
+            if (gameOver) {
+                ctx.fillStyle = "#535353";
+                ctx.font = "16px sans-serif";
+                ctx.fillText("G A M E   O V E R", canvas.width / 2 - 60, canvas.height / 2);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            if (!gameOver) {
+                requestAnimationFrame(loop);
+            }
+        }
+
+        loop();
+    </script>
+</body>
+</html>
